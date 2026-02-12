@@ -32,8 +32,7 @@ async function startServer() {
   try {
     // Connect to MongoDB
     await mongoose.connect(MONGODB_URI, {
-      tls: true,
-      tlsAllowInvalidCertificates: false,
+      serverSelectionTimeoutMS: 30000,
     });
     console.log('✓ Connected to MongoDB');
 
@@ -46,8 +45,8 @@ async function startServer() {
     // Start live data generation
     startLiveDataGeneration();
 
-    // Start Express server
-    app.listen(PORT, () => {
+    // Start Express server — bind to 0.0.0.0 for Render
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`✓ Server running on port ${PORT}`);
       console.log(`✓ API available at http://localhost:${PORT}/api`);
     });
