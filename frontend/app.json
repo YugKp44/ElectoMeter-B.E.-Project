@@ -1,18 +1,37 @@
 {
   "expo": {
-    "name": "Smart Meter",
+    "name": "ElectoMeter",
     "slug": "smart-meter-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0a0e1a"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smartmeter.app"
     },
     "android": {
-      "package": "com.smartmeter.app"
+      "package": "com.smartmeter.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f1b2d"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c48bd987-6780-4038-890e-f5b08b0c3a7a"
+      }
     }
   }
 }

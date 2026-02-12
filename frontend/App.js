@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import BillingScreen from './screens/BillingScreen';
@@ -15,6 +16,7 @@ import AdminUsersScreen from './screens/AdminUsersScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null); // 'user' or 'admin'
   const [userData, setUserData] = useState(null);
@@ -38,6 +40,11 @@ export default function App() {
   const switchToUser = () => {
     setUserRole('user');
   };
+
+  // Show animated splash screen on launch
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   // Show login screen if not logged in
   if (!isLoggedIn) {
