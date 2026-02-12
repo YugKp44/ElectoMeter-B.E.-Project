@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets)
+.env
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.*
+
+# Lock files (each sub-project has its own)
+package-lock.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+*.tgz
+*.tar.gz
+
+# Signing keys (security)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# EAS Build
+eas.json
+
+# Root-level stray files
+/package.json
