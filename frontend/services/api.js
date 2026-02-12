@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-// Update this URL to match your backend server
-// For Android emulator, use 10.0.2.2 instead of localhost
-// For iOS simulator, use localhost
-// For physical device, use your computer's IP address (currently: 10.208.146.161)
-const API_BASE_URL = 'http://10.208.146.161:3000/api';
+// Production API URL (Render)
+const API_BASE_URL = 'https://electometer-backend.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
