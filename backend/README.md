@@ -7,8 +7,12 @@ Backend API for the Smart Energy Meter simulation system. Generates realistic ti
 - RESTful API for meter readings, bills, and alerts
 - Automatic data generation and seeding
 - Real-time energy consumption simulation
+- Real ESP USB serial ingestion (COM port)
+- ESP HTTP ingestion endpoint for Wi-Fi capable boards
 - Theft detection algorithm
 - MongoDB database with optimized schemas
+
+For hardware integration setup, see `ESP_SETUP.md`.
 
 ## Prerequisites
 - Node.js (v14 or higher)

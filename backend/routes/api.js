@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const meterController = require('../controllers/meterController');
 const adminController = require('../controllers/adminController');
+const espController = require('../controllers/espController');
 
 // User/Meter endpoints
 // Get live reading for a meter
@@ -15,6 +16,10 @@ router.get('/meters/:meterId/bills', meterController.getBills);
 
 // Get all alerts for a meter
 router.get('/meters/:meterId/alerts', meterController.getAlerts);
+
+// ESP ingestion endpoints
+router.post('/esp/readings', espController.ingestReading);
+router.get('/esp/status', espController.getEspStatus);
 
 // Admin endpoints
 // Admin login

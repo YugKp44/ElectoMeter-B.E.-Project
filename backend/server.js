@@ -4,11 +4,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const apiRoutes = require('./routes/api');
 const { seedDatabase, startLiveDataGeneration } = require('./services/simulationService');
+const { startEspSerialIngestion } = require('./services/espIngestionService');
 const { createDefaultAdmin } = require('./controllers/adminController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-meter';
+const SHOULD_SEED_DATABASE = String(process.env.SEED_DATABASE || 'true').toLowerCase() === 'true';
+const ENABLE_SIMULATION = String(process.env.ENABLE_SIMULATION || 'true').toLowerCase() === 'true';
 
 // Middleware
 app.use(cors());
@@ -40,10 +43,21 @@ async function startServer() {
     await createDefaultAdmin();
 
     // Seed database with initial data
-    await seedDatabase();
+    if (SHOULD_SEED_DATABASE) {
+      await seedDatabase();
+    } else {
+      console.log('Database seeding skipped (SEED_DATABASE=false).');
+    }
 
-    // Start live data generation
-    startLiveDataGeneration();
+    // Start simulated live data generation when enabled
+    if (ENABLE_SIMULATION) {
+      startLiveDataGeneration();
+    } else {
+      console.log('Simulation disabled (ENABLE_SIMULATION=false).');
+    }
+
+    // Start ESP serial ingestion service when enabled
+    startEspSerialIngestion();
 
     // Start Express server — bind to 0.0.0.0 for Render
     app.listen(PORT, '0.0.0.0', () => {
