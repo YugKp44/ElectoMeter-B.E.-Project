@@ -19,7 +19,8 @@ import PeriodSelector from '../components/PeriodSelector';
 import { getLiveReading, getHistoricalReadings, getEspStatus } from '../services/api';
 
 const METER_ID = 'MTR-1001';
-const POLL_INTERVAL = 5000; // 5 seconds
+const LIVE_POLL_INTERVAL = 5000; // 5 seconds
+const ESP_STATUS_POLL_INTERVAL = 1000; // 1 second
 
 const ADMIN_CREDENTIALS = {
   username: 'admin',
@@ -96,12 +97,20 @@ const DashboardScreen = ({ route }) => {
     fetchEspStreamStatus();
   }, []);
 
-  // Poll live data every 5 seconds
+  // Poll live power reading every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchLiveData();
+    }, LIVE_POLL_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll ESP packet/status every second for near real-time stream monitor updates
+  useEffect(() => {
+    const interval = setInterval(() => {
       fetchEspStreamStatus();
-    }, POLL_INTERVAL);
+    }, ESP_STATUS_POLL_INTERVAL);
 
     return () => clearInterval(interval);
   }, []);

@@ -1,5 +1,5 @@
 const unsigned long BAUD_RATE = 9600;
-const unsigned long SEND_INTERVAL_MS = 2000;
+const unsigned long SEND_INTERVAL_MS = 1000;
 const unsigned long MODE_DURATION_MS = 20000;
 
 const char *METER_ID = "MTR-1001";

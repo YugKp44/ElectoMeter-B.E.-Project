@@ -3,7 +3,7 @@
 
 const unsigned long USB_BAUD_RATE = 9600;
 const unsigned long PZEM_BAUD_RATE = 9600;
-const unsigned long SEND_INTERVAL_MS = 2000;
+const unsigned long SEND_INTERVAL_MS = 1000;
 
 const char *METER_ID = "MTR-1001";
 const int PZEM_RX_PIN = 16;
