@@ -3,6 +3,7 @@
 This guide helps you send live ESP readings (via USB cable to laptop) into this backend so the mobile app can show real data.
 
 No sensor yet? Use ready sketch at `../hardware/esp-no-sensor-demo/esp-no-sensor-demo.ino`.
+Real PZEM sensor mode sketch is at `../hardware/esp-pzem-realtime/esp-pzem-realtime.ino`.
 
 ## 1. Configure backend `.env`
 

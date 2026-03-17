@@ -57,6 +57,17 @@ export const getAlerts = async (meterId) => {
   }
 };
 
+// Get ESP ingestion/serial stream status
+export const getEspStatus = async () => {
+  try {
+    const response = await api.get('/esp/status');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching ESP status:', error);
+    throw error;
+  }
+};
+
 // Admin API calls
 // Admin login
 export const adminLogin = async (username, password) => {
@@ -164,6 +175,7 @@ export default {
   getHistoricalReadings,
   getBills,
   getAlerts,
+  getEspStatus,
   adminLogin,
   getSystemStats,
   getAllMeters,

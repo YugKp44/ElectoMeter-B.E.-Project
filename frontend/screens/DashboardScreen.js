@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LiveUsageCard from '../components/LiveUsageCard';
+import EspStreamStatusCard from '../components/EspStreamStatusCard';
 import UsageHistoryChart from '../components/UsageHistoryChart';
 import PeriodSelector from '../components/PeriodSelector';
-import { getLiveReading, getHistoricalReadings } from '../services/api';
+import { getLiveReading, getHistoricalReadings, getEspStatus } from '../services/api';
 
 const METER_ID = 'MTR-1001';
 const POLL_INTERVAL = 5000; // 5 seconds
@@ -32,8 +33,11 @@ const DashboardScreen = ({ route }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('24h');
   const [loadingLive, setLoadingLive] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingEspStatus, setLoadingEspStatus] = useState(true);
   const [errorLive, setErrorLive] = useState(false);
   const [errorHistory, setErrorHistory] = useState(false);
+  const [errorEspStatus, setErrorEspStatus] = useState(false);
+  const [espStatus, setEspStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   
   // Admin login modal states
@@ -71,16 +75,32 @@ const DashboardScreen = ({ route }) => {
     }
   };
 
+  // Fetch ESP stream status data
+  const fetchEspStreamStatus = async () => {
+    try {
+      const data = await getEspStatus();
+      setEspStatus(data);
+      setErrorEspStatus(false);
+    } catch (error) {
+      console.error('Error fetching ESP stream status:', error);
+      setErrorEspStatus(true);
+    } finally {
+      setLoadingEspStatus(false);
+    }
+  };
+
   // Initial data fetch
   useEffect(() => {
     fetchLiveData();
     fetchHistoryData(selectedPeriod);
+    fetchEspStreamStatus();
   }, []);
 
   // Poll live data every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchLiveData();
+      fetchEspStreamStatus();
     }, POLL_INTERVAL);
 
     return () => clearInterval(interval);
@@ -94,7 +114,7 @@ const DashboardScreen = ({ route }) => {
   // Handle pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchLiveData(), fetchHistoryData(selectedPeriod)]);
+    await Promise.all([fetchLiveData(), fetchHistoryData(selectedPeriod), fetchEspStreamStatus()]);
     setRefreshing(false);
   };
 
@@ -160,6 +180,12 @@ const DashboardScreen = ({ route }) => {
       </View>
 
       <LiveUsageCard data={liveData} loading={loadingLive} error={errorLive} />
+
+      <EspStreamStatusCard
+        status={espStatus}
+        loading={loadingEspStatus}
+        error={errorEspStatus}
+      />
 
       <PeriodSelector
         selectedPeriod={selectedPeriod}
