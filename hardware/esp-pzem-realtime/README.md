@@ -15,7 +15,7 @@ Use this firmware when PZEM-004T sensor is available.
 
 ## Install Arduino Library
 
-Install library PZEM004Tv30 by Jakub Mandula in Arduino IDE.
+Install library MycilaPZEM (mathieucarbou) in Arduino IDE.
 
 ## Upload Flow
 

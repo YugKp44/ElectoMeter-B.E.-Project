@@ -123,16 +123,41 @@ async function persistReading(payload) {
 }
 
 function parseKeyValueLine(line) {
+  const keyAliases = {
+    power_watts: 'power_watts',
+    powerwatts: 'power_watts',
+    power: 'power_watts',
+    p: 'power_watts',
+    voltage: 'voltage',
+    volt: 'voltage',
+    v: 'voltage',
+    current: 'current',
+    amps: 'current',
+    amp: 'current',
+    ampere: 'current',
+    i: 'current',
+    meterid: 'meterId',
+    meter_id: 'meterId',
+    id: 'meterId',
+  };
+
   const values = {};
   const regex = /([a-zA-Z_]+)\s*[:=]\s*([^,\s]+)/g;
   let match = regex.exec(line);
 
   while (match) {
-    values[match[1]] = match[2];
+    const key = String(match[1] || '').trim().toLowerCase();
+    const normalizedKey = keyAliases[key];
+    if (normalizedKey) {
+      values[normalizedKey] = match[2];
+    }
     match = regex.exec(line);
   }
 
-  return Object.keys(values).length > 0 ? values : null;
+  const hasNumericMeasurement = ['power_watts', 'voltage', 'current']
+    .some((key) => toFiniteNumber(values[key]) !== null);
+
+  return hasNumericMeasurement ? values : null;
 }
 
 function parseCsvLine(line) {
