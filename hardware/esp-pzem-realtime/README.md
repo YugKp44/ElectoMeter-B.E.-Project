@@ -29,12 +29,12 @@ Install library MycilaPZEM (mathieucarbou) in Arduino IDE.
 
 ## Backend Compatibility
 
-This firmware sends CSV lines in this format:
+This firmware sends JSON lines in this format:
 
-power_watts,voltage,current,meterId
+{"meterId":"MTR-1001","power_watts":120.53,"voltage":229.84,"current":0.524,"apparent_power_va":120.53,"reactive_power_var":0.00,"power_factor":1.000,"frequency_hz":50.00,"energy_wh":4532.00}
 
 Example:
 
-120.53,229.84,0.524,MTR-1001
+{"meterId":"MTR-1001","power_watts":118.42,"voltage":230.01,"current":0.515,"apparent_power_va":118.45,"reactive_power_var":1.90,"power_factor":0.999,"frequency_hz":49.98,"energy_wh":4533.07}
 
 No backend code changes are needed.

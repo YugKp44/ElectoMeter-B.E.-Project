@@ -44,6 +44,27 @@ function normalizeReadingPayload(payload, fallbackMeterId = DEFAULT_METER_ID) {
   const power = toFiniteNumber(payload.power_watts ?? payload.powerWatts ?? payload.power);
   const voltage = toFiniteNumber(payload.voltage ?? payload.volt);
   let current = toFiniteNumber(payload.current ?? payload.amps ?? payload.ampere);
+  let apparentPower = toFiniteNumber(
+    payload.apparent_power_va
+      ?? payload.apparentPower
+      ?? payload.apparent_power
+      ?? payload.va,
+  );
+  let reactivePower = toFiniteNumber(
+    payload.reactive_power_var
+      ?? payload.reactivePower
+      ?? payload.reactive_power
+      ?? payload.var,
+  );
+  let powerFactor = toFiniteNumber(
+    payload.power_factor
+      ?? payload.powerFactor
+      ?? payload.pf
+      ?? payload.cosphi,
+  );
+  let frequencyHz = toFiniteNumber(payload.frequency_hz ?? payload.frequency ?? payload.hz);
+  let energyWh = toFiniteNumber(payload.energy_wh ?? payload.energyWh ?? payload.energy);
+  const energyKwh = toFiniteNumber(payload.energy_kwh ?? payload.energyKwh);
 
   if (power === null) {
     throw buildValidationError('power_watts (or power) is required and must be numeric');
@@ -54,9 +75,37 @@ function normalizeReadingPayload(payload, fallbackMeterId = DEFAULT_METER_ID) {
   if (current === null) {
     current = voltage === 0 ? 0 : power / voltage;
   }
+  if (apparentPower === null) {
+    apparentPower = voltage * current;
+  }
+  if (reactivePower === null && apparentPower !== null) {
+    const remainder = (apparentPower ** 2) - (power ** 2);
+    reactivePower = remainder > 0 ? Math.sqrt(remainder) : 0;
+  }
+  if (powerFactor === null && apparentPower !== null && apparentPower > 0) {
+    powerFactor = power / apparentPower;
+  }
+  if (frequencyHz === null) {
+    frequencyHz = null;
+  }
+  if (energyWh === null && energyKwh !== null) {
+    energyWh = energyKwh * 1000;
+  }
 
   if (power < 0 || voltage < 0 || current < 0) {
     throw buildValidationError('power_watts, voltage and current must be >= 0');
+  }
+  if (apparentPower !== null && apparentPower < 0) {
+    throw buildValidationError('apparent_power_va must be >= 0');
+  }
+  if (powerFactor !== null && powerFactor < 0) {
+    throw buildValidationError('power_factor must be >= 0');
+  }
+  if (frequencyHz !== null && frequencyHz < 0) {
+    throw buildValidationError('frequency_hz must be >= 0');
+  }
+  if (energyWh !== null && energyWh < 0) {
+    throw buildValidationError('energy_wh must be >= 0');
   }
 
   let timestamp = new Date();
@@ -73,6 +122,11 @@ function normalizeReadingPayload(payload, fallbackMeterId = DEFAULT_METER_ID) {
     power_watts: Number(power.toFixed(3)),
     voltage: Number(voltage.toFixed(3)),
     current: Number(current.toFixed(3)),
+    apparent_power_va: apparentPower === null ? undefined : Number(apparentPower.toFixed(3)),
+    reactive_power_var: reactivePower === null ? undefined : Number(reactivePower.toFixed(3)),
+    power_factor: powerFactor === null ? undefined : Number(powerFactor.toFixed(3)),
+    frequency_hz: frequencyHz === null ? undefined : Number(frequencyHz.toFixed(3)),
+    energy_wh: energyWh === null ? undefined : Number(energyWh.toFixed(3)),
   };
 }
 
@@ -136,6 +190,23 @@ function parseKeyValueLine(line) {
     amp: 'current',
     ampere: 'current',
     i: 'current',
+    apparent_power_va: 'apparent_power_va',
+    apparentpower: 'apparent_power_va',
+    va: 'apparent_power_va',
+    reactive_power_var: 'reactive_power_var',
+    reactivepower: 'reactive_power_var',
+    var: 'reactive_power_var',
+    power_factor: 'power_factor',
+    powerfactor: 'power_factor',
+    pf: 'power_factor',
+    cosphi: 'power_factor',
+    frequency_hz: 'frequency_hz',
+    frequency: 'frequency_hz',
+    hz: 'frequency_hz',
+    energy_wh: 'energy_wh',
+    energy: 'energy_wh',
+    energykwh: 'energy_kwh',
+    energy_kwh: 'energy_kwh',
     meterid: 'meterId',
     meter_id: 'meterId',
     id: 'meterId',
@@ -154,7 +225,7 @@ function parseKeyValueLine(line) {
     match = regex.exec(line);
   }
 
-  const hasNumericMeasurement = ['power_watts', 'voltage', 'current']
+  const hasNumericMeasurement = ['power_watts', 'voltage', 'current', 'apparent_power_va', 'reactive_power_var', 'power_factor', 'frequency_hz', 'energy_wh', 'energy_kwh']
     .some((key) => toFiniteNumber(values[key]) !== null);
 
   return hasNumericMeasurement ? values : null;
@@ -171,6 +242,11 @@ function parseCsvLine(line) {
     voltage: parts[1],
     current: parts[2],
     meterId: parts[3],
+    apparent_power_va: parts[4],
+    reactive_power_var: parts[5],
+    power_factor: parts[6],
+    frequency_hz: parts[7],
+    energy_wh: parts[8],
   };
 }
 

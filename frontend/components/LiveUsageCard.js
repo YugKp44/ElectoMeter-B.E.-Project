@@ -3,6 +3,15 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
 const STALE_AFTER_MS = 10000;
 
+function formatValue(value, digits, unit = '') {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+    return '--';
+  }
+
+  const formatted = Number(value).toFixed(digits);
+  return unit ? `${formatted} ${unit}` : formatted;
+}
+
 const LiveUsageCard = ({ data, loading, error }) => {
   const [nowMs, setNowMs] = useState(Date.now());
 
@@ -43,25 +52,56 @@ const LiveUsageCard = ({ data, loading, error }) => {
         ...data,
         power_watts: 0,
         current: 0,
+        apparent_power_va: 0,
+        reactive_power_var: 0,
+        power_factor: 0,
       }
     : data;
 
+  const apparentPower = Number.isFinite(Number(displayData.apparent_power_va))
+    ? Number(displayData.apparent_power_va)
+    : Number(displayData.voltage) * Number(displayData.current);
+
+  const reactivePower = Number.isFinite(Number(displayData.reactive_power_var))
+    ? Number(displayData.reactive_power_var)
+    : Math.sqrt(Math.max((apparentPower ** 2) - (Number(displayData.power_watts || 0) ** 2), 0));
+
+  const powerFactor = Number.isFinite(Number(displayData.power_factor))
+    ? Number(displayData.power_factor)
+    : (apparentPower > 0 ? Number(displayData.power_watts || 0) / apparentPower : 0);
+
+  const frequencyHz = Number.isFinite(Number(displayData.frequency_hz))
+    ? Number(displayData.frequency_hz)
+    : null;
+
+  const energyWh = Number.isFinite(Number(displayData.energy_wh))
+    ? Number(displayData.energy_wh)
+    : null;
+
+  const metricItems = [
+    { label: 'Voltage', value: formatValue(displayData.voltage, 1, 'V') },
+    { label: 'Current', value: formatValue(displayData.current, 3, 'A') },
+    { label: 'Apparent Power', value: formatValue(apparentPower, 1, 'VA') },
+    { label: 'Reactive Power', value: formatValue(reactivePower, 1, 'var') },
+    { label: 'Power Factor', value: formatValue(powerFactor, 3) },
+    { label: 'Frequency', value: formatValue(frequencyHz, 2, 'Hz') },
+    { label: 'Energy', value: energyWh === null ? '--' : formatValue(energyWh / 1000, 3, 'kWh') },
+  ];
+
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Current Power Usage</Text>
+      <Text style={styles.title}>Live PZEM Telemetry</Text>
       <View style={styles.powerContainer}>
-        <Text style={styles.powerValue}>{displayData.power_watts?.toFixed(1)}</Text>
+        <Text style={styles.powerValue}>{formatValue(displayData.power_watts, 1)}</Text>
         <Text style={styles.powerUnit}>Watts</Text>
       </View>
-      <View style={styles.detailsContainer}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Voltage</Text>
-          <Text style={styles.detailValue}>{displayData.voltage?.toFixed(1)} V</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Current</Text>
-          <Text style={styles.detailValue}>{displayData.current?.toFixed(2)} A</Text>
-        </View>
+      <View style={styles.metricsGrid}>
+        {metricItems.map((item) => (
+          <View key={item.label} style={styles.metricItem}>
+            <Text style={styles.detailLabel}>{item.label}</Text>
+            <Text style={styles.detailValue}>{item.value}</Text>
+          </View>
+        ))}
       </View>
       {isStale ? (
         <Text style={styles.staleText}>No fresh PZEM data for 10s, showing zero load</Text>
@@ -95,7 +135,7 @@ const styles = StyleSheet.create({
   powerContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   powerValue: {
     fontSize: 56,
@@ -108,34 +148,40 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 8,
   },
-  detailsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  metricsGrid: {
     width: '100%',
-    marginBottom: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  detailItem: {
-    alignItems: 'center',
+  metricItem: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 4,
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 3,
   },
   detailValue: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#1E293B',
   },
   timestamp: {
     fontSize: 12,
     color: '#999',
-    marginTop: 8,
+    marginTop: 6,
   },
   staleText: {
     fontSize: 12,
     color: '#D97706',
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'center',
   },
   errorText: {

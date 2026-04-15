@@ -58,6 +58,12 @@ Send one line per reading. Supported formats:
 {"meterId":"MTR-1001","power_watts":120.5,"voltage":229.7,"current":0.525}
 ```
 
+Optional extended fields are also supported:
+
+```text
+{"meterId":"MTR-1001","power_watts":120.5,"voltage":229.7,"current":0.525,"apparent_power_va":121.0,"reactive_power_var":3.2,"power_factor":0.996,"frequency_hz":50.0,"energy_wh":12345.6}
+```
+
 ### key=value format
 
 ```text

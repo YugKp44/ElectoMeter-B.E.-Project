@@ -20,7 +20,12 @@ exports.getLiveReading = async (req, res) => {
       timestamp: latestReading.timestamp,
       power_watts: latestReading.power_watts,
       voltage: latestReading.voltage,
-      current: latestReading.current
+      current: latestReading.current,
+      apparent_power_va: latestReading.apparent_power_va,
+      reactive_power_var: latestReading.reactive_power_var,
+      power_factor: latestReading.power_factor,
+      frequency_hz: latestReading.frequency_hz,
+      energy_wh: latestReading.energy_wh
     });
   } catch (error) {
     console.error('Error fetching live reading:', error);
@@ -57,7 +62,7 @@ exports.getHistoricalReadings = async (req, res) => {
       timestamp: { $gte: startTime }
     })
       .sort({ timestamp: 1 })
-      .select('timestamp power_watts voltage current');
+      .select('timestamp power_watts voltage current apparent_power_va reactive_power_var power_factor frequency_hz energy_wh');
     
     res.json(readings);
   } catch (error) {

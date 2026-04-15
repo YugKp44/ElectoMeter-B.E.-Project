@@ -51,6 +51,11 @@ void setup()
         float voltage = data.voltage;
         float current = data.current;
         float power = data.activePower;
+        float apparentPower = data.apparentPower;
+        float reactivePower = data.reactivePower;
+        float powerFactor = data.powerFactor;
+        float frequencyHz = data.frequency;
+        float energyWh = data.activeEnergy;
 
         if (!isValidValue(voltage) || !isValidValue(current))
         {
@@ -69,21 +74,62 @@ void setup()
             power = voltage * current;
         }
 
+        if (!isValidValue(apparentPower))
+        {
+            apparentPower = voltage * current;
+        }
+
+        if (!isValidValue(reactivePower))
+        {
+            const float remainder = (apparentPower * apparentPower) - (power * power);
+            reactivePower = remainder > 0.0f ? sqrtf(remainder) : 0.0f;
+        }
+
+        if (!isValidValue(powerFactor))
+        {
+            powerFactor = apparentPower > 0.0f ? power / apparentPower : 0.0f;
+        }
+
+        if (!isValidValue(frequencyHz))
+        {
+            frequencyHz = 0.0f;
+        }
+
+        if (!isValidValue(energyWh))
+        {
+            energyWh = 0.0f;
+        }
+
         // Clamp only tiny idle readings to zero. Both current and power must be low.
         if (current <= ZERO_CURRENT_THRESHOLD_A && power <= ZERO_POWER_THRESHOLD_W)
         {
             current = 0.0f;
             power = 0.0f;
+            apparentPower = 0.0f;
+            reactivePower = 0.0f;
+            powerFactor = 0.0f;
         }
 
-        // CSV format expected by backend serial parser: power,voltage,current,meterId
+        // JSON format expected by backend parser, including extended telemetry fields.
+        Serial.print("{\"meterId\":\"");
+        Serial.print(METER_ID);
+        Serial.print("\",\"power_watts\":");
         Serial.print(power, 2);
-        Serial.print(",");
+        Serial.print(",\"voltage\":");
         Serial.print(voltage, 2);
-        Serial.print(",");
+        Serial.print(",\"current\":");
         Serial.print(current, 3);
-        Serial.print(",");
-        Serial.println(METER_ID); });
+        Serial.print(",\"apparent_power_va\":");
+        Serial.print(apparentPower, 2);
+        Serial.print(",\"reactive_power_var\":");
+        Serial.print(reactivePower, 2);
+        Serial.print(",\"power_factor\":");
+        Serial.print(powerFactor, 3);
+        Serial.print(",\"frequency_hz\":");
+        Serial.print(frequencyHz, 2);
+        Serial.print(",\"energy_wh\":");
+        Serial.print(energyWh, 2);
+        Serial.println("}"); });
 }
 
 void loop()

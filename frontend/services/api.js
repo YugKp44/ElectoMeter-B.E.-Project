@@ -3,6 +3,8 @@ import axios from 'axios';
 // Production API URL (Render)
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://electometer-backend.onrender.com/api';
 
+console.log('[API] Base URL:', API_BASE_URL);
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -17,7 +19,11 @@ export const getLiveReading = async (meterId) => {
     const response = await api.get(`/meters/${meterId}/live`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching live reading:', error);
+    console.error('Error fetching live reading:', {
+      message: error?.message,
+      baseURL: API_BASE_URL,
+      path: `/meters/${meterId}/live`,
+    });
     throw error;
   }
 };
@@ -30,7 +36,12 @@ export const getHistoricalReadings = async (meterId, period = '24h') => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching historical readings:', error);
+    console.error('Error fetching historical readings:', {
+      message: error?.message,
+      baseURL: API_BASE_URL,
+      path: `/meters/${meterId}/history`,
+      period,
+    });
     throw error;
   }
 };

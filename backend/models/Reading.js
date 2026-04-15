@@ -5,7 +5,12 @@ const readingSchema = new mongoose.Schema({
   timestamp: { type: Date, required: true, default: Date.now },
   power_watts: { type: Number, required: true }, // Instantaneous power in Watts
   voltage: { type: Number, required: true },
-  current: { type: Number, required: true }
+  current: { type: Number, required: true },
+  apparent_power_va: { type: Number },
+  reactive_power_var: { type: Number },
+  power_factor: { type: Number },
+  frequency_hz: { type: Number },
+  energy_wh: { type: Number }
 });
 
 // Create compound index for efficient time-series queries
