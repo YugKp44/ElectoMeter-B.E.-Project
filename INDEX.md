@@ -8,6 +8,10 @@ Welcome to the Smart Energy Meter System documentation. This index will help you
 |------------|----------------|
 | Get started quickly | [SETUP.md](SETUP.md) |
 | Understand the complete project | [README.md](README.md) |
+| Handover to partner (minimal effort) | [PARTNER_QUICK_START.md](PARTNER_QUICK_START.md) |
+| Deploy backend to cloud for handover | [PARTNER_CLOUD_DEPLOYMENT.md](PARTNER_CLOUD_DEPLOYMENT.md) |
+| Run locally on partner laptop (fallback) | [PARTNER_LOCAL_FALLBACK.md](PARTNER_LOCAL_FALLBACK.md) |
+| Final handover verification | [PARTNER_PREHANDOVER_CHECKLIST.md](PARTNER_PREHANDOVER_CHECKLIST.md) |
 | Prepare for presentation | [PRESENTATION_NOTES.md](PRESENTATION_NOTES.md) |
 | See what's completed | [CHECKLIST.md](CHECKLIST.md) |
 | View architecture | [DIAGRAMS.md](DIAGRAMS.md) |

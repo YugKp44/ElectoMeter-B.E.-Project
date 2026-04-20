@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
-const STALE_AFTER_MS = 10000;
+const STALE_AFTER_MS = 120000;
 
 function formatValue(value, digits, unit = '') {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) {
@@ -47,16 +47,7 @@ const LiveUsageCard = ({ data, loading, error, dataSource = 'real' }) => {
   const hasValidTimestamp = Number.isFinite(timestampMs);
   const isStale = hasValidTimestamp ? nowMs - timestampMs > STALE_AFTER_MS : false;
 
-  const displayData = isStale
-    ? {
-        ...data,
-        power_watts: 0,
-        current: 0,
-        apparent_power_va: 0,
-        reactive_power_var: 0,
-        power_factor: 0,
-      }
-    : data;
+  const displayData = data;
 
   const apparentPower = Number.isFinite(Number(displayData.apparent_power_va))
     ? Number(displayData.apparent_power_va)
@@ -117,7 +108,7 @@ const LiveUsageCard = ({ data, loading, error, dataSource = 'real' }) => {
         ))}
       </View>
       {isStale ? (
-        <Text style={styles.staleText}>No fresh PZEM data for 10s, showing zero load</Text>
+        <Text style={styles.staleText}>No fresh hardware update in the last 2 minutes. Showing last real reading.</Text>
       ) : null}
       <Text style={styles.timestamp}>
         Last updated: {new Date(data.timestamp).toLocaleTimeString()}

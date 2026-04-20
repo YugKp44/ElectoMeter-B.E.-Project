@@ -6,7 +6,10 @@ import {
 } from './mockData';
 
 // Production API URL (Render)
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://electometer-backend.onrender.com/api';
+const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  'https://electometer-b-e-project.onrender.com/api'
+).trim();
 
 console.log('[API] Base URL:', API_BASE_URL);
 
