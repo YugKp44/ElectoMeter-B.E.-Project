@@ -6,6 +6,21 @@ const Alert = require('../models/Alert');
 
 const DEFAULT_METER_ID = process.env.ESP_DEFAULT_METER_ID || 'MTR-1001';
 const HIGH_USAGE_THRESHOLD_WATTS = Number(process.env.HIGH_USAGE_THRESHOLD_WATTS || 5000);
+const ESP_DEBUG_LOGS = String(process.env.ESP_DEBUG_LOGS || 'false').toLowerCase() === 'true';
+
+function debugLog(message, details = null) {
+  if (!ESP_DEBUG_LOGS) {
+    return;
+  }
+
+  const stamp = new Date().toISOString();
+  if (details) {
+    console.log(`[ESP_DEBUG ${stamp}] ${message}`, details);
+    return;
+  }
+
+  console.log(`[ESP_DEBUG ${stamp}] ${message}`);
+}
 
 const runtimeState = {
   serialEnabled: false,
@@ -13,6 +28,16 @@ const runtimeState = {
   portPath: null,
   baudRate: null,
   lastLineAt: null,
+  lastHttpRequestAt: null,
+  lastHttpRequestId: null,
+  lastPersistAt: null,
+  lastPersistSource: null,
+  lastPersistMeterId: null,
+  lastPersistPowerWatts: null,
+  lastPersistTimestamp: null,
+  totalPersisted: 0,
+  totalHttpIngested: 0,
+  totalSerialIngested: 0,
   lastError: null,
   totalIngested: 0,
 };
@@ -151,11 +176,48 @@ async function ensureMeterExists(meterId) {
   }
 }
 
-async function persistReading(payload) {
+async function persistReading(payload, options = {}) {
+  const source = options.source || 'http';
+  const requestId = options.requestId || null;
+
+  debugLog('persistReading called', {
+    source,
+    requestId,
+    meterId: payload?.meterId,
+    hasPower: payload?.power_watts !== undefined || payload?.power !== undefined,
+  });
+
   const normalized = normalizeReadingPayload(payload);
   await ensureMeterExists(normalized.meterId);
 
   const created = await Reading.create(normalized);
+
+  runtimeState.lastPersistAt = new Date();
+  runtimeState.lastPersistSource = source;
+  runtimeState.lastPersistMeterId = created.meterId;
+  runtimeState.lastPersistPowerWatts = created.power_watts;
+  runtimeState.lastPersistTimestamp = created.timestamp;
+  runtimeState.totalPersisted += 1;
+  runtimeState.totalIngested = runtimeState.totalPersisted;
+  if (source === 'serial') {
+    runtimeState.totalSerialIngested += 1;
+  } else {
+    runtimeState.totalHttpIngested += 1;
+    runtimeState.lastHttpRequestAt = new Date();
+    runtimeState.lastHttpRequestId = requestId;
+  }
+
+  debugLog('persistReading saved', {
+    source,
+    requestId,
+    readingId: created._id,
+    meterId: created.meterId,
+    timestamp: created.timestamp,
+    power_watts: created.power_watts,
+    voltage: created.voltage,
+    current: created.current,
+    totalPersisted: runtimeState.totalPersisted,
+  });
 
   if (created.power_watts === 0) {
     await Alert.create({
@@ -347,11 +409,13 @@ function startEspSerialIngestion() {
     try {
       const normalized = parseSerialLine(line);
       if (!normalized) {
+        debugLog('serial line ignored (no telemetry keys)', {
+          raw: String(line || '').trim().slice(0, 180),
+        });
         return;
       }
 
-      await persistReading(normalized);
-      runtimeState.totalIngested += 1;
+      await persistReading(normalized, { source: 'serial' });
     } catch (error) {
       runtimeState.lastError = error.message;
       console.error(`ESP line rejected: ${error.message}`);
@@ -377,8 +441,19 @@ function getEspIngestionStatus() {
     portPath: runtimeState.portPath,
     baudRate: runtimeState.baudRate,
     defaultMeterId: DEFAULT_METER_ID,
+    debugLogsEnabled: ESP_DEBUG_LOGS,
     totalIngested: runtimeState.totalIngested,
+    totalPersisted: runtimeState.totalPersisted,
+    totalHttpIngested: runtimeState.totalHttpIngested,
+    totalSerialIngested: runtimeState.totalSerialIngested,
     lastLineAt: runtimeState.lastLineAt,
+    lastHttpRequestAt: runtimeState.lastHttpRequestAt,
+    lastHttpRequestId: runtimeState.lastHttpRequestId,
+    lastPersistAt: runtimeState.lastPersistAt,
+    lastPersistSource: runtimeState.lastPersistSource,
+    lastPersistMeterId: runtimeState.lastPersistMeterId,
+    lastPersistPowerWatts: runtimeState.lastPersistPowerWatts,
+    lastPersistTimestamp: runtimeState.lastPersistTimestamp,
     lastError: runtimeState.lastError,
   };
 }
