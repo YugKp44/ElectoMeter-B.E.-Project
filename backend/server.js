@@ -10,8 +10,9 @@ const { createDefaultAdmin } = require('./controllers/adminController');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-meter';
-const SHOULD_SEED_DATABASE = String(process.env.SEED_DATABASE || 'true').toLowerCase() === 'true';
-const ENABLE_SIMULATION = String(process.env.ENABLE_SIMULATION || 'true').toLowerCase() === 'true';
+const IS_PRODUCTION = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+const SHOULD_SEED_DATABASE = String(process.env.SEED_DATABASE || (IS_PRODUCTION ? 'false' : 'true')).toLowerCase() === 'true';
+const ENABLE_SIMULATION = String(process.env.ENABLE_SIMULATION || (IS_PRODUCTION ? 'false' : 'true')).toLowerCase() === 'true';
 
 // Middleware
 app.use(cors());
@@ -39,6 +40,12 @@ async function startServer() {
     });
     console.log('✓ Connected to MongoDB');
 
+    // Start Express server immediately so hosting platforms can detect open port.
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✓ Server running on port ${PORT}`);
+      console.log(`✓ API available at http://localhost:${PORT}/api`);
+    });
+
     // Create default admin account
     await createDefaultAdmin();
 
@@ -58,12 +65,6 @@ async function startServer() {
 
     // Start ESP serial ingestion service when enabled
     startEspSerialIngestion();
-
-    // Start Express server — bind to 0.0.0.0 for Render
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`✓ Server running on port ${PORT}`);
-      console.log(`✓ API available at http://localhost:${PORT}/api`);
-    });
   } catch (error) {
     console.error('Error starting server:', error);
     process.exit(1);

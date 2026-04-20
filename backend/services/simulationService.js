@@ -6,6 +6,7 @@ const Alert = require('../models/Alert');
 const METER_ID = 'MTR-1001';
 const BASE_POWER = 300; // Base power consumption in watts
 const VOLTAGE_NOMINAL = 230; // Nominal voltage in volts
+const SEED_READING_BATCH_SIZE = Number(process.env.SEED_READING_BATCH_SIZE || 1000);
 
 // Generate a random power reading with fluctuations
 function generatePowerReading() {
@@ -111,32 +112,45 @@ async function seedDatabase() {
 
     await Meter.insertMany(meters);
     console.log(`✓ ${meters.length} Meters created across multiple zones`);
-    
-    // Generate 7 days of historical readings for all meters
-    const readings = [];
+
+    // Generate 7 days of historical readings for all meters in small batches
+    // to keep memory usage low on small production instances.
     const now = new Date();
     const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
     const INTERVAL = 5 * 60 * 1000; // 5 minutes
-    
+    let totalReadingsInserted = 0;
+
     for (const meter of meters) {
+      let batch = [];
+
       for (let i = SEVEN_DAYS; i >= 0; i -= INTERVAL) {
         const timestamp = new Date(now.getTime() - i);
         const power = generatePowerReading();
         const voltage = generateVoltage();
         const current = calculateCurrent(power, voltage);
-        
-        readings.push({
+
+        batch.push({
           meterId: meter.meterId,
           timestamp,
           power_watts: power,
           voltage,
           current
         });
+
+        if (batch.length >= SEED_READING_BATCH_SIZE) {
+          await Reading.insertMany(batch, { ordered: false });
+          totalReadingsInserted += batch.length;
+          batch = [];
+        }
+      }
+
+      if (batch.length > 0) {
+        await Reading.insertMany(batch, { ordered: false });
+        totalReadingsInserted += batch.length;
       }
     }
-    
-    await Reading.insertMany(readings);
-    console.log(`✓ ${readings.length} historical readings created for all meters`);
+
+    console.log(`✓ ${totalReadingsInserted} historical readings created for all meters`);
     
     // Generate sample bills for the last 4 months for all meters
     const bills = [];
