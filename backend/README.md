@@ -33,6 +33,23 @@ MONGODB_URI=mongodb://localhost:27017/smart-meter
 NODE_ENV=development
 ```
 
+### Production deployment (Render/Railway)
+
+Use these environment variables in production to avoid heavy startup seeding on low-memory instances:
+
+```
+NODE_ENV=production
+SEED_DATABASE=false
+ENABLE_SIMULATION=false
+ESP_SERIAL_ENABLED=false
+```
+
+If you intentionally enable seeding in production, you can tune memory usage with:
+
+```
+SEED_READING_BATCH_SIZE=1000
+```
+
 3. Make sure MongoDB is running on your system.
 
 ## Running the Server

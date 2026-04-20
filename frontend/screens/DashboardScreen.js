@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LiveUsageCard from '../components/LiveUsageCard';
+import InsightsSummaryCard from '../components/InsightsSummaryCard';
 import UsageHistoryChart from '../components/UsageHistoryChart';
 import PeriodSelector from '../components/PeriodSelector';
-import { getLiveReading, getHistoricalReadings } from '../services/api';
+import { getLiveReading, getHistoricalReadings, getMeterInsights } from '../services/api';
 
 const METER_ID = 'MTR-1001';
 const LIVE_POLL_INTERVAL = 5000; // 5 seconds
@@ -32,8 +33,11 @@ const DashboardScreen = ({ route }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('24h');
   const [loadingLive, setLoadingLive] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingInsights, setLoadingInsights] = useState(true);
   const [errorLive, setErrorLive] = useState(false);
   const [errorHistory, setErrorHistory] = useState(false);
+  const [errorInsights, setErrorInsights] = useState(false);
+  const [insights, setInsights] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   
   // Admin login modal states
@@ -71,16 +75,32 @@ const DashboardScreen = ({ route }) => {
     }
   };
 
+  // Fetch smart insights (anomaly score, forecast, cost, carbon)
+  const fetchInsights = async () => {
+    try {
+      const data = await getMeterInsights(METER_ID);
+      setInsights(data);
+      setErrorInsights(false);
+    } catch (error) {
+      console.error('Error fetching insights:', error);
+      setErrorInsights(true);
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
+
   // Initial data fetch
   useEffect(() => {
     fetchLiveData();
     fetchHistoryData(selectedPeriod);
+    fetchInsights();
   }, []);
 
   // Poll live power reading every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchLiveData();
+      fetchInsights();
     }, LIVE_POLL_INTERVAL);
 
     return () => clearInterval(interval);
@@ -94,7 +114,7 @@ const DashboardScreen = ({ route }) => {
   // Handle pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchLiveData(), fetchHistoryData(selectedPeriod)]);
+    await Promise.all([fetchLiveData(), fetchHistoryData(selectedPeriod), fetchInsights()]);
     setRefreshing(false);
   };
 
@@ -160,6 +180,8 @@ const DashboardScreen = ({ route }) => {
       </View>
 
       <LiveUsageCard data={liveData} loading={loadingLive} error={errorLive} />
+
+      <InsightsSummaryCard insights={insights} loading={loadingInsights} error={errorInsights} />
 
       <PeriodSelector
         selectedPeriod={selectedPeriod}

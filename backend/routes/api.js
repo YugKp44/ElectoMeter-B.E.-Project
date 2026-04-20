@@ -17,6 +17,9 @@ router.get('/meters/:meterId/bills', meterController.getBills);
 // Get all alerts for a meter
 router.get('/meters/:meterId/alerts', meterController.getAlerts);
 
+// Get insights for a meter (anomaly score, forecast, cost, carbon)
+router.get('/meters/:meterId/insights', meterController.getMeterInsights);
+
 // ESP ingestion endpoints
 router.post('/esp/readings', espController.ingestReading);
 router.get('/esp/status', espController.getEspStatus);
@@ -48,5 +51,8 @@ router.get('/admin/analytics/area-wise', adminController.getAreaWiseAnalytics);
 
 // Get consumption prediction
 router.get('/admin/analytics/prediction', adminController.getConsumptionPrediction);
+
+// Trigger demo events for presentation (power drop/spike/low PF)
+router.post('/admin/demo/:meterId/trigger', adminController.triggerDemoEvent);
 
 module.exports = router;

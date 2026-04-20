@@ -462,6 +462,92 @@ exports.getConsumptionPrediction = async (req, res) => {
   }
 };
 
+// Trigger controlled demo events for presentation
+exports.triggerDemoEvent = async (req, res) => {
+  try {
+    const { meterId } = req.params;
+    const { eventType } = req.body;
+
+    const normalizedEvent = String(eventType || '').toUpperCase();
+    const allowed = ['POWER_DROP', 'SPIKE_LOAD', 'LOW_POWER_FACTOR'];
+
+    if (!allowed.includes(normalizedEvent)) {
+      return res.status(400).json({ message: `Invalid eventType. Allowed: ${allowed.join(', ')}` });
+    }
+
+    const meter = await Meter.findOne({ meterId });
+    if (!meter) {
+      return res.status(404).json({ message: 'Meter not found' });
+    }
+
+    const latest = await Reading.findOne({ meterId }).sort({ timestamp: -1 }).limit(1);
+    const baseVoltage = Number(latest?.voltage || 230);
+    const baseCurrent = Number(latest?.current || 1);
+    const basePower = Number(latest?.power_watts || (baseVoltage * baseCurrent));
+
+    const payload = {
+      meterId,
+      timestamp: new Date(),
+      power_watts: basePower,
+      voltage: baseVoltage,
+      current: baseCurrent,
+      apparent_power_va: baseVoltage * baseCurrent,
+      reactive_power_var: 0,
+      power_factor: 1,
+      frequency_hz: 50,
+      energy_wh: Number(latest?.energy_wh || 0),
+    };
+
+    let alertType = 'HIGH_USAGE';
+    let alertMessage = 'Demo event injected from admin panel.';
+
+    if (normalizedEvent === 'POWER_DROP') {
+      payload.power_watts = 0;
+      payload.current = 0;
+      payload.apparent_power_va = 0;
+      payload.reactive_power_var = 0;
+      payload.power_factor = 0;
+      alertType = 'THEFT_SUSPICION';
+      alertMessage = 'Demo: sudden power drop pattern injected (possible theft scenario).';
+    }
+
+    if (normalizedEvent === 'SPIKE_LOAD') {
+      payload.power_watts = Math.max(basePower * 3, 6500);
+      payload.current = payload.power_watts / Math.max(payload.voltage, 1);
+      payload.apparent_power_va = payload.voltage * payload.current;
+      payload.reactive_power_var = Math.sqrt(Math.max((payload.apparent_power_va ** 2) - (payload.power_watts ** 2), 0));
+      payload.power_factor = payload.apparent_power_va > 0 ? payload.power_watts / payload.apparent_power_va : 0;
+      alertMessage = `Demo: high load spike injected (${payload.power_watts.toFixed(1)}W).`;
+    }
+
+    if (normalizedEvent === 'LOW_POWER_FACTOR') {
+      payload.power_factor = 0.45;
+      payload.apparent_power_va = Math.max(payload.power_watts / payload.power_factor, payload.power_watts);
+      payload.current = payload.apparent_power_va / Math.max(payload.voltage, 1);
+      payload.reactive_power_var = Math.sqrt(Math.max((payload.apparent_power_va ** 2) - (payload.power_watts ** 2), 0));
+      alertMessage = 'Demo: poor power factor event injected for efficiency alert.';
+    }
+
+    const createdReading = await Reading.create(payload);
+    const createdAlert = await Alert.create({
+      meterId,
+      timestamp: new Date(),
+      type: alertType,
+      message: alertMessage,
+    });
+
+    return res.json({
+      success: true,
+      eventType: normalizedEvent,
+      reading: createdReading,
+      alert: createdAlert,
+    });
+  } catch (error) {
+    console.error('Trigger demo event error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Create default admin (for initial setup)
 exports.createDefaultAdmin = async () => {
   try {

@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
-import { getSystemStats, getAreaWiseAnalytics, getConsumptionPrediction } from '../services/api';
+import { getSystemStats, getAreaWiseAnalytics, getConsumptionPrediction, triggerDemoEvent } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -19,90 +20,42 @@ const AdminDashboardScreen = () => {
   const [areaData, setAreaData] = useState([]);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
+  const DEMO_METER_ID = 'MTR-1001';
 
   const fetchAllData = async () => {
     try {
-      // Use mock data with realistic values for 50 meters across 5 zones
-      const mockStats = {
-        meters: { total: 50, active: 46, inactive: 4 },
-        bills: { total: 200, due: 18, paid: 182 },
-        alerts: { total: 127, recent24h: 8, theftSuspicion: 94, highUsage: 33 },
-        revenue: { total: 895640, pending: 87320, collected: 808320 },
-        energy: { totalKwh: 111955 }
-      };
+      const [statsData, areaAnalytics, predictionData] = await Promise.all([
+        getSystemStats(),
+        getAreaWiseAnalytics(),
+        getConsumptionPrediction(7),
+      ]);
 
-      const mockAreaData = [
-        {
-          area: 'Zone A',
-          meterCount: 10,
-          consumption30Days: 3842.5,
-          currentPower: 384.2,
-          revenue30Days: 30740,
-          prediction: { nextMonth: 3956.2, trend: 'increasing', dailyAverage: 128.1 }
-        },
-        {
-          area: 'Zone B',
-          meterCount: 10,
-          consumption30Days: 27894.0,
-          currentPower: 2789.4,
-          revenue30Days: 223152,
-          prediction: { nextMonth: 28450.8, trend: 'increasing', dailyAverage: 929.8 }
-        },
-        {
-          area: 'Zone C',
-          meterCount: 10,
-          consumption30Days: 51570.0,
-          currentPower: 5157.0,
-          revenue30Days: 412560,
-          prediction: { nextMonth: 52814.7, trend: 'increasing', dailyAverage: 1719.0 }
-        },
-        {
-          area: 'Zone D',
-          meterCount: 10,
-          consumption30Days: 6908.0,
-          currentPower: 690.8,
-          revenue30Days: 55264,
-          prediction: { nextMonth: 7046.2, trend: 'stable', dailyAverage: 230.3 }
-        },
-        {
-          area: 'Zone E',
-          meterCount: 10,
-          consumption30Days: 28740.5,
-          currentPower: 2874.1,
-          revenue30Days: 229924,
-          prediction: { nextMonth: 29437.1, trend: 'increasing', dailyAverage: 958.0 }
-        }
-      ];
-
-      const mockPrediction = {
-        prediction: [
-          { date: new Date().toISOString(), predictedPower: 2389.0, confidence: 92 },
-          { date: new Date(Date.now() + 86400000).toISOString(), predictedPower: 2412.3, confidence: 89 },
-          { date: new Date(Date.now() + 172800000).toISOString(), predictedPower: 2398.7, confidence: 87 },
-          { date: new Date(Date.now() + 259200000).toISOString(), predictedPower: 2456.2, confidence: 85 },
-          { date: new Date(Date.now() + 345600000).toISOString(), predictedPower: 2489.5, confidence: 83 },
-          { date: new Date(Date.now() + 432000000).toISOString(), predictedPower: 2501.8, confidence: 81 },
-          { date: new Date(Date.now() + 518400000).toISOString(), predictedPower: 2534.6, confidence: 79 }
-        ],
-        trend: 'increasing',
-        confidence: 85.7,
-        summary: {
-          avgHistorical: 2376.8,
-          avgPredicted: 2454.6,
-          changePercent: 3.27
-        }
-      };
-
-      setStats(mockStats);
-      setAreaData(mockAreaData);
-      setPrediction(mockPrediction);
+      setStats(statsData);
+      setAreaData(Array.isArray(areaAnalytics) ? areaAnalytics : []);
+      setPrediction(predictionData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      Alert.alert('Data Error', 'Unable to load live admin analytics from backend.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleTriggerDemoEvent = async (eventType, title) => {
+    try {
+      setDemoLoading(true);
+      await triggerDemoEvent(DEMO_METER_ID, eventType);
+      Alert.alert('Demo Event Triggered', `${title} injected for meter ${DEMO_METER_ID}`);
+      await fetchAllData();
+    } catch (error) {
+      console.error('Failed to trigger demo event:', error);
+      Alert.alert('Failed', 'Could not trigger demo event. Please try again.');
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -174,7 +127,11 @@ const AdminDashboardScreen = () => {
         }
       >
         {selectedTab === 'overview' && stats && (
-          <OverviewTab stats={stats} />
+          <OverviewTab
+            stats={stats}
+            onTriggerDemoEvent={handleTriggerDemoEvent}
+            demoLoading={demoLoading}
+          />
         )}
         {selectedTab === 'areas' && areaData && (
           <AreasTab areaData={areaData} />
@@ -188,7 +145,7 @@ const AdminDashboardScreen = () => {
 };
 
 // Overview Tab Component
-const OverviewTab = ({ stats }) => (
+const OverviewTab = ({ stats, onTriggerDemoEvent, demoLoading }) => (
   <View style={styles.tabContent}>
     <View style={styles.quickStats}>
       <QuickStatCard
@@ -224,6 +181,37 @@ const OverviewTab = ({ stats }) => (
       <View style={styles.alertsGrid}>
         <AlertCard type="Theft" count={stats.alerts?.theftSuspicion || 0} icon="🚨" color="#D32F2F" />
         <AlertCard type="High Usage" count={stats.alerts?.highUsage || 0} icon="📊" color="#FF9800" />
+      </View>
+    </View>
+
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Presentation Demo Controls</Text>
+      <View style={styles.demoCard}>
+        <Text style={styles.demoInfoText}>Inject live scenarios for meter MTR-1001</Text>
+        <View style={styles.demoButtonsRow}>
+          <TouchableOpacity
+            style={[styles.demoButton, styles.demoButtonDanger]}
+            onPress={() => onTriggerDemoEvent('POWER_DROP', 'Power Drop / Theft')}
+            disabled={demoLoading}
+          >
+            <Text style={styles.demoButtonText}>Power Drop</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.demoButton, styles.demoButtonWarn]}
+            onPress={() => onTriggerDemoEvent('SPIKE_LOAD', 'High Load Spike')}
+            disabled={demoLoading}
+          >
+            <Text style={styles.demoButtonText}>Spike Load</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.demoButton, styles.demoButtonInfo]}
+            onPress={() => onTriggerDemoEvent('LOW_POWER_FACTOR', 'Low Power Factor')}
+            disabled={demoLoading}
+          >
+            <Text style={styles.demoButtonText}>Low PF</Text>
+          </TouchableOpacity>
+        </View>
+        {demoLoading ? <Text style={styles.demoLoadingText}>Injecting event...</Text> : null}
       </View>
     </View>
   </View>
@@ -450,7 +438,7 @@ const MetricCard = ({ title, value, total, color }) => (
       <Text style={styles.metricTotal}>/ {total}</Text>
     </View>
     <View style={styles.metricBar}>
-      <View style={[styles.metricProgress, { width: `${(value/total)*100}%`, backgroundColor: color }]} />
+      <View style={[styles.metricProgress, { width: `${total > 0 ? (value / total) * 100 : 0}%`, backgroundColor: color }]} />
     </View>
   </View>
 );
@@ -782,6 +770,52 @@ const styles = StyleSheet.create({
   predictionTrend: {
     fontSize: 12,
     color: '#666',
+  },
+  demoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  demoInfoText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 10,
+  },
+  demoButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  demoButton: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  demoButtonDanger: {
+    backgroundColor: '#EF4444',
+  },
+  demoButtonWarn: {
+    backgroundColor: '#F59E0B',
+  },
+  demoButtonInfo: {
+    backgroundColor: '#3B82F6',
+  },
+  demoButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  demoLoadingText: {
+    fontSize: 12,
+    color: '#334155',
+    marginTop: 8,
+    textAlign: 'center',
   },
   trendCard: {
     flexDirection: 'row',

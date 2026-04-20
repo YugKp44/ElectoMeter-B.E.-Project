@@ -68,6 +68,21 @@ export const getAlerts = async (meterId) => {
   }
 };
 
+// Get actionable insights for a meter
+export const getMeterInsights = async (meterId) => {
+  try {
+    const response = await api.get(`/meters/${meterId}/insights`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching meter insights:', {
+      message: error?.message,
+      baseURL: API_BASE_URL,
+      path: `/meters/${meterId}/insights`,
+    });
+    throw error;
+  }
+};
+
 // Get ESP ingestion/serial stream status
 export const getEspStatus = async () => {
   try {
@@ -181,11 +196,23 @@ export const getConsumptionPrediction = async (days = 30) => {
   }
 };
 
+// Trigger admin demo event for presentation
+export const triggerDemoEvent = async (meterId, eventType) => {
+  try {
+    const response = await api.post(`/admin/demo/${meterId}/trigger`, { eventType });
+    return response.data;
+  } catch (error) {
+    console.error('Error triggering demo event:', error);
+    throw error;
+  }
+};
+
 export default {
   getLiveReading,
   getHistoricalReadings,
   getBills,
   getAlerts,
+  getMeterInsights,
   getEspStatus,
   adminLogin,
   getSystemStats,
@@ -196,4 +223,5 @@ export default {
   getAllAlerts,
   getAreaWiseAnalytics,
   getConsumptionPrediction,
+  triggerDemoEvent,
 };
