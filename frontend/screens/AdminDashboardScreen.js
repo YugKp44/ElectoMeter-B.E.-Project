@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Image,
 } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { getSystemStats, getAreaWiseAnalytics, getConsumptionPrediction, triggerDemoEvent } from '../services/api';
@@ -83,9 +84,16 @@ const AdminDashboardScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerTitle}>Admin Portal</Text>
-            <Text style={styles.headerSubtitle}>System Control Center</Text>
+          <View style={styles.headerBrandWrap}>
+            <Image
+              source={require('../assets/logos/logo_app_icon.png')}
+              style={styles.headerBrandLogo}
+              resizeMode="cover"
+            />
+            <View>
+              <Text style={styles.headerTitle}>Admin Portal</Text>
+              <Text style={styles.headerSubtitle}>System Control Center</Text>
+            </View>
           </View>
           <View style={styles.headerBadge}>
             <Text style={styles.headerBadgeText}>●  LIVE</Text>
@@ -490,6 +498,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerBrandWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerBrandLogo: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
   },
   headerTitle: {
     fontSize: 32,

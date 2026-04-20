@@ -12,7 +12,7 @@ function formatValue(value, digits, unit = '') {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
-const LiveUsageCard = ({ data, loading, error }) => {
+const LiveUsageCard = ({ data, loading, error, dataSource = 'real' }) => {
   const [nowMs, setNowMs] = useState(Date.now());
 
   useEffect(() => {
@@ -90,7 +90,20 @@ const LiveUsageCard = ({ data, loading, error }) => {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Live PZEM Telemetry</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Live PZEM Telemetry</Text>
+        <View
+          style={[
+            styles.sourceBadge,
+            dataSource === 'mock' ? styles.sourceBadgeMock : styles.sourceBadgeReal,
+          ]}
+        >
+          <Text style={styles.sourceBadgeText}>{dataSource === 'mock' ? 'SIMULATED' : 'REAL'}</Text>
+        </View>
+      </View>
+      {dataSource === 'mock' ? (
+        <Text style={styles.sourceHint}>Using simulation because real live data is unavailable.</Text>
+      ) : null}
       <View style={styles.powerContainer}>
         <Text style={styles.powerValue}>{formatValue(displayData.power_watts, 1)}</Text>
         <Text style={styles.powerUnit}>Watts</Text>
@@ -130,7 +143,36 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 16,
+  },
+  titleRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sourceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  sourceBadgeReal: {
+    backgroundColor: '#DCFCE7',
+  },
+  sourceBadgeMock: {
+    backgroundColor: '#FEF3C7',
+  },
+  sourceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.5,
+  },
+  sourceHint: {
+    width: '100%',
+    fontSize: 12,
+    color: '#92400E',
+    marginBottom: 8,
   },
   powerContainer: {
     flexDirection: 'row',

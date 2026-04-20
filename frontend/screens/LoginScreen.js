@@ -23,6 +23,11 @@ const DEMO_CREDENTIALS = {
   },
 };
 
+const LOGIN_BRAND_ASSETS = {
+  user: require('../assets/logos/logo_horizontal.png'),
+  admin: require('../assets/logos/logo_horizontal.png'),
+};
+
 const LoginScreen = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -81,12 +86,19 @@ const LoginScreen = ({ onLogin }) => {
         <View style={styles.content}>
           {/* Logo/Icon Section */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoIcon}>{loginType === 'admin' ? '👨‍💼' : '⚡'}</Text>
+            <View style={styles.logoShowcase}>
+              <Image
+                source={LOGIN_BRAND_ASSETS[loginType]}
+                style={[styles.logoImage, loginType === 'admin' ? styles.logoImageAdmin : styles.logoImageUser]}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={styles.title}>Smart Meter</Text>
+            <View style={styles.modeBadge}>
+              <Text style={styles.modeBadgeText}>{loginType === 'admin' ? 'ADMIN PORTAL' : 'USER PORTAL'}</Text>
+            </View>
+            <Text style={styles.title}>ElectoMeter</Text>
             <Text style={styles.subtitle}>
-              {loginType === 'admin' ? 'Admin Portal' : 'Energy Monitoring System'}
+              {loginType === 'admin' ? 'Operations and anomaly control center' : 'Live energy monitoring and billing insights'}
             </Text>
           </View>
 
@@ -162,7 +174,7 @@ const LoginScreen = ({ onLogin }) => {
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.loginButtonText}>
+              <Text style={[styles.loginButtonText, loginType === 'admin' && styles.loginButtonTextAdmin]}>
                 {loading ? 'Logging in...' : 'Login'}
               </Text>
             </TouchableOpacity>
@@ -207,32 +219,58 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 50,
+    paddingHorizontal: 24,
   },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
+  logoShowcase: {
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
-  logoIcon: {
-    fontSize: 50,
+  logoImage: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  logoImageUser: {
+    width: 260,
+    height: 74,
+    borderRadius: 10,
+  },
+  logoImageAdmin: {
+    width: 260,
+    height: 74,
+    borderRadius: 10,
+  },
+  modeBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  modeBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '800',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
+    textAlign: 'center',
   },
   formContainer: {
     paddingHorizontal: 30,
@@ -291,6 +329,9 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  loginButtonTextAdmin: {
+    color: '#E74C3C',
   },
   demoInfo: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',

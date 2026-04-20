@@ -1,4 +1,9 @@
 import axios from 'axios';
+import {
+  generateMockLiveReading,
+  generateMockHistoricalReadings,
+  generateMockBills,
+} from './mockData';
 
 // Production API URL (Render)
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://electometer-backend.onrender.com/api';
@@ -13,48 +18,96 @@ const api = axios.create({
   },
 });
 
-// Get live reading for a meter
-export const getLiveReading = async (meterId) => {
+const SOURCE_REAL = 'real';
+const SOURCE_MOCK = 'mock';
+
+function isNotFound(error) {
+  return Number(error?.response?.status) === 404;
+}
+
+function withSource(data, source, reason = null) {
+  return {
+    data,
+    source,
+    reason,
+  };
+}
+
+export const getLiveReadingWithSource = async (meterId) => {
   try {
     const response = await api.get(`/meters/${meterId}/live`);
-    return response.data;
+    if (response?.data && response.data.timestamp) {
+      return withSource(response.data, SOURCE_REAL);
+    }
+
+    return withSource(
+      generateMockLiveReading(meterId),
+      SOURCE_MOCK,
+      'empty_payload',
+    );
   } catch (error) {
-    console.error('Error fetching live reading:', {
-      message: error?.message,
-      baseURL: API_BASE_URL,
-      path: `/meters/${meterId}/live`,
-    });
-    throw error;
+    const reason = isNotFound(error) ? 'no_real_reading' : 'api_error';
+    console.warn(`[API] Falling back to simulated live reading (${reason})`);
+    return withSource(generateMockLiveReading(meterId), SOURCE_MOCK, reason);
   }
 };
 
-// Get historical readings for a meter
-export const getHistoricalReadings = async (meterId, period = '24h') => {
+export const getHistoricalReadingsWithSource = async (meterId, period = '24h') => {
   try {
     const response = await api.get(`/meters/${meterId}/history`, {
       params: { period },
     });
-    return response.data;
+
+    const realData = Array.isArray(response?.data) ? response.data : [];
+    if (realData.length > 0) {
+      return withSource(realData, SOURCE_REAL);
+    }
+
+    return withSource(
+      generateMockHistoricalReadings(meterId, period),
+      SOURCE_MOCK,
+      'empty_history',
+    );
   } catch (error) {
-    console.error('Error fetching historical readings:', {
-      message: error?.message,
-      baseURL: API_BASE_URL,
-      path: `/meters/${meterId}/history`,
-      period,
-    });
-    throw error;
+    const reason = isNotFound(error) ? 'no_history' : 'api_error';
+    console.warn(`[API] Falling back to simulated history (${reason})`);
+    return withSource(generateMockHistoricalReadings(meterId, period), SOURCE_MOCK, reason);
   }
+};
+
+export const getBillsWithSource = async (meterId) => {
+  try {
+    const response = await api.get(`/meters/${meterId}/bills`);
+    const realBills = Array.isArray(response?.data) ? response.data : [];
+
+    if (realBills.length > 0) {
+      return withSource(realBills, SOURCE_REAL);
+    }
+
+    return withSource(generateMockBills(meterId), SOURCE_MOCK, 'empty_bills');
+  } catch (error) {
+    const reason = isNotFound(error) ? 'no_bills' : 'api_error';
+    console.warn(`[API] Falling back to simulated bills (${reason})`);
+    return withSource(generateMockBills(meterId), SOURCE_MOCK, reason);
+  }
+};
+
+// Get live reading for a meter
+export const getLiveReading = async (meterId) => {
+  const result = await getLiveReadingWithSource(meterId);
+  return result.data;
+};
+
+// Get historical readings for a meter
+export const getHistoricalReadings = async (meterId, period = '24h') => {
+  const result = await getHistoricalReadingsWithSource(meterId, period);
+  return result.data;
 };
 
 // Get bills for a meter
 export const getBills = async (meterId) => {
-  try {
-    const response = await api.get(`/meters/${meterId}/bills`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching bills:', error);
-    throw error;
-  }
+  const result = await getBillsWithSource(meterId);
+  return result.data;
 };
 
 // Get alerts for a meter
@@ -209,8 +262,11 @@ export const triggerDemoEvent = async (meterId, eventType) => {
 
 export default {
   getLiveReading,
+  getLiveReadingWithSource,
   getHistoricalReadings,
+  getHistoricalReadingsWithSource,
   getBills,
+  getBillsWithSource,
   getAlerts,
   getMeterInsights,
   getEspStatus,

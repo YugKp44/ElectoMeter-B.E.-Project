@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
-const UsageHistoryChart = ({ data, loading, error, period }) => {
+const UsageHistoryChart = ({ data, loading, error, period, dataSource = 'real' }) => {
   if (loading) {
     return (
       <View style={styles.container}>
@@ -52,7 +52,20 @@ const UsageHistoryChart = ({ data, loading, error, period }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Power Usage History</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Power Usage History</Text>
+        <View
+          style={[
+            styles.sourceBadge,
+            dataSource === 'mock' ? styles.sourceBadgeMock : styles.sourceBadgeReal,
+          ]}
+        >
+          <Text style={styles.sourceBadgeText}>{dataSource === 'mock' ? 'SIMULATED' : 'REAL'}</Text>
+        </View>
+      </View>
+      {dataSource === 'mock' ? (
+        <Text style={styles.sourceHint}>Using simulation because real history is unavailable.</Text>
+      ) : null}
       <LineChart
         data={chartData}
         width={screenWidth - 32}
@@ -98,7 +111,36 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 16,
+  },
+  titleRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sourceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  sourceBadgeReal: {
+    backgroundColor: '#DCFCE7',
+  },
+  sourceBadgeMock: {
+    backgroundColor: '#FEF3C7',
+  },
+  sourceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.5,
+  },
+  sourceHint: {
+    width: '100%',
+    fontSize: 12,
+    color: '#92400E',
+    marginBottom: 8,
   },
   chart: {
     marginVertical: 8,

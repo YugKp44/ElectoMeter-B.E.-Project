@@ -9,14 +9,19 @@ import {
   Modal,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import LiveUsageCard from '../components/LiveUsageCard';
 import InsightsSummaryCard from '../components/InsightsSummaryCard';
 import UsageHistoryChart from '../components/UsageHistoryChart';
 import PeriodSelector from '../components/PeriodSelector';
-import { getLiveReading, getHistoricalReadings, getMeterInsights } from '../services/api';
+import {
+  getLiveReadingWithSource,
+  getHistoricalReadingsWithSource,
+  getMeterInsights,
+} from '../services/api';
 
 const METER_ID = 'MTR-1001';
 const LIVE_POLL_INTERVAL = 5000; // 5 seconds
@@ -38,6 +43,8 @@ const DashboardScreen = ({ route }) => {
   const [errorHistory, setErrorHistory] = useState(false);
   const [errorInsights, setErrorInsights] = useState(false);
   const [insights, setInsights] = useState(null);
+  const [liveDataSource, setLiveDataSource] = useState('real');
+  const [historyDataSource, setHistoryDataSource] = useState('real');
   const [refreshing, setRefreshing] = useState(false);
   
   // Admin login modal states
@@ -49,8 +56,9 @@ const DashboardScreen = ({ route }) => {
   // Fetch live data
   const fetchLiveData = async () => {
     try {
-      const data = await getLiveReading(METER_ID);
-      setLiveData(data);
+      const result = await getLiveReadingWithSource(METER_ID);
+      setLiveData(result.data);
+      setLiveDataSource(result.source);
       setErrorLive(false);
     } catch (error) {
       console.error('Error fetching live data:', error);
@@ -64,8 +72,9 @@ const DashboardScreen = ({ route }) => {
   const fetchHistoryData = async (period) => {
     try {
       setLoadingHistory(true);
-      const data = await getHistoricalReadings(METER_ID, period);
-      setHistoryData(data);
+      const result = await getHistoricalReadingsWithSource(METER_ID, period);
+      setHistoryData(result.data);
+      setHistoryDataSource(result.source);
       setErrorHistory(false);
     } catch (error) {
       console.error('Error fetching history data:', error);
@@ -164,6 +173,11 @@ const DashboardScreen = ({ route }) => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
+            <Image
+              source={require('../assets/logos/logo_monochrome.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.headerTitle}>Dashboard</Text>
             <Text style={styles.headerSubtitle}>Meter ID: {METER_ID}</Text>
           </View>
@@ -179,7 +193,12 @@ const DashboardScreen = ({ route }) => {
         </View>
       </View>
 
-      <LiveUsageCard data={liveData} loading={loadingLive} error={errorLive} />
+      <LiveUsageCard
+        data={liveData}
+        loading={loadingLive}
+        error={errorLive}
+        dataSource={liveDataSource}
+      />
 
       <InsightsSummaryCard insights={insights} loading={loadingInsights} error={errorInsights} />
 
@@ -193,6 +212,7 @@ const DashboardScreen = ({ route }) => {
         loading={loadingHistory}
         error={errorHistory}
         period={selectedPeriod}
+        dataSource={historyDataSource}
       />
 
       {/* Admin Login Modal */}
@@ -216,7 +236,11 @@ const DashboardScreen = ({ route }) => {
 
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                <Text style={styles.logoIcon}>🔐</Text>
+                <Image
+                  source={require('../assets/logos/logo_app_icon.png')}
+                  style={styles.modalLogoImage}
+                  resizeMode="cover"
+                />
               </View>
               <Text style={styles.welcomeText}>Restricted Access</Text>
               <Text style={styles.subtitleText}>Enter admin credentials to continue</Text>
@@ -284,6 +308,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerLogo: {
+    width: 170,
+    height: 42,
+    marginBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
@@ -366,14 +395,16 @@ const styles = StyleSheet.create({
   logoCircle: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.24)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
   },
-  logoIcon: {
-    fontSize: 40,
+  modalLogoImage: {
+    width: 80,
+    height: 80,
   },
   welcomeText: {
     fontSize: 22,

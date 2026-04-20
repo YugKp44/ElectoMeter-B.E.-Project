@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { writeAsStringAsync, documentDirectory } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { getBills } from '../services/api';
+import { getBillsWithSource } from '../services/api';
 
 const METER_ID = 'MTR-1001';
 
@@ -23,14 +23,16 @@ const BillingScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
+  const [billsSource, setBillsSource] = useState('real');
   const [selectedBill, setSelectedBill] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
   const fetchBills = async () => {
     try {
       setLoading(true);
-      const data = await getBills(METER_ID);
-      setBills(data);
+      const result = await getBillsWithSource(METER_ID);
+      setBills(result.data);
+      setBillsSource(result.source);
       setError(false);
     } catch (error) {
       console.error('Error fetching bills:', error);
@@ -233,8 +235,21 @@ IMPORTANT INFORMATION:
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Digital Bills</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.headerTitle}>Digital Bills</Text>
+          <View
+            style={[
+              styles.sourceBadge,
+              billsSource === 'mock' ? styles.sourceBadgeMock : styles.sourceBadgeReal,
+            ]}
+          >
+            <Text style={styles.sourceBadgeText}>{billsSource === 'mock' ? 'SIMULATED' : 'REAL'}</Text>
+          </View>
+        </View>
         <Text style={styles.headerSubtitle}>Meter ID: {METER_ID}</Text>
+        {billsSource === 'mock' ? (
+          <Text style={styles.sourceHint}>Showing simulation bills because real bills are unavailable.</Text>
+        ) : null}
       </View>
 
       <FlatList
@@ -491,6 +506,11 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     backgroundColor: '#fff',
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -500,6 +520,28 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#999',
+  },
+  sourceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  sourceBadgeReal: {
+    backgroundColor: '#DCFCE7',
+  },
+  sourceBadgeMock: {
+    backgroundColor: '#FEF3C7',
+  },
+  sourceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.5,
+  },
+  sourceHint: {
+    fontSize: 12,
+    color: '#92400E',
+    marginTop: 6,
   },
   listContainer: {
     padding: 16,
